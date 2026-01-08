@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Scoot - La Nourriture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Handlee&family=Quicksand:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #f0f9ff;
+        }
+
+        .card-font {
+            font-family: 'Handlee', cursive;
+        }
+
+        .scoot-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .scoot-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+
+        /* Animations */
+        @keyframes scoot-in {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .animate-scoot {
+            animation: scoot-in 0.4s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Game Container -->
+    <div id="game-container" class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-6 md:p-8 border-4 border-blue-400">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="text-blue-600 font-bold text-xl flex items-center gap-2">
+                <span id="card-index-display">Question 1/40</span>
+            </div>
+            <div id="score-display" class="bg-green-100 text-green-700 px-4 py-1 rounded-full font-bold">
+                Score: 0
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-gray-200 rounded-full h-3 mb-8">
+            <div id="progress-bar" class="bg-blue-500 h-3 rounded-full progress-bar" style="width: 2.5%"></div>
+        </div>
+
+        <!-- Card Content Area -->
+        <div id="card-display" class="animate-scoot min-h-[300px] flex flex-col justify-center items-center text-center space-y-6">
+            <!-- Dynamic Content Injected Here -->
+            <div id="question-text" class="card-font text-2xl md:text-3xl text-gray-800 leading-relaxed font-bold">
+                Loading task...
+            </div>
+
+            <div id="interaction-area" class="w-full pt-4">
+                <!-- Inputs or Buttons appear here -->
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex justify-between items-center mt-10">
+            <button id="prev-btn" class="hidden text-gray-400 hover:text-blue-500 font-bold py-2 px-4 transition">
+                ← Précédent
+            </button>
+            <button id="next-btn" class="ml-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition transform active:scale-95">
+                Suivant →
+            </button>
+        </div>
+    </div>
+
+    <!-- Result Screen (Hidden by default) -->
+    <div id="result-screen" class="hidden fixed inset-0 bg-blue-600 flex flex-center items-center justify-center p-6 text-white text-center z-50">
+        <div class="max-w-md">
+            <h1 class="text-5xl font-bold mb-4">BRAVO !</h1>
+            <p class="text-xl mb-8">Tu as terminé le Scoot de la nourriture.</p>
+            <div class="bg-white text-blue-600 p-8 rounded-3xl shadow-xl mb-8">
+                <div class="text-sm uppercase tracking-widest font-bold opacity-70">Ton Score Final</div>
+                <div id="final-score" class="text-6xl font-black">0/40</div>
+            </div>
+            <button onclick="location.reload()" class="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-black py-4 px-10 rounded-2xl text-xl shadow-xl transition transform hover:scale-105">
+                REJOUER
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const tasks = [
+            { id: 1, type: 'open', q: "Écris 3 fruits que tu aimes.", hint: "Ex: la pomme, la banane..." },
+            { id: 2, type: 'open', q: "Écris 3 légumes que tu aimes.", hint: "Ex: les carottes, les petits pois..." },
+            { id: 3, type: 'open', q: "Écris 3 viandes que l'on mange au dîner.", hint: "Ex: le poulet, le steak..." },
+            { id: 4, type: 'open', q: "Écris 3 boissons que tu aimes.", hint: "Ex: l'eau, le jus..." },
+            { id: 5, type: 'choice', q: "Au petit déjeuner, j'aime manger...", options: ["a. du poulet", "b. des céréales", "c. du café", "d. des petits pois"], correct: 1 },
+            { id: 6, type: 'choice', q: "Pour faire une salade, j'ai...", options: ["a. de la laitue", "b. du lait", "c. de l'ananas", "d. du yaourt"], correct: 0 },
+            { id: 7, type: 'choice', q: "Quand j'ai soif, j'aime boire...", options: ["a. du gâteau", "b. de la glace", "c. de l'eau", "d. de la pomme"], correct: 2 },
+            { id: 8, type: 'choice', q: "Maman prépare ____ pour le dîner.", options: ["a. du bœuf", "b. du chocolat chaud", "c. des céréales", "d. des fraises"], correct: 0 },
+            { id: 9, type: 'fill', q: "Conjugue 'manger' : Elle ____ des frites.", answer: "mange" },
+            { id: 10, type: 'fill', q: "Conjugue 'manger' : Vous ____ du steak.", answer: "mangez" },
+            { id: 11, type: 'fill', q: "Conjugue 'manger' : Nous ____ des raisins.", answer: "mangeons" },
+            { id: 12, type: 'fill', q: "Conjugue 'manger' : Tu ____ du gâteau.", answer: "manges" },
+            { id: 13, type: 'fill', q: "Complète : Tu as faim ? Tu veux un ____ ?", hint: "Un repas ou un aliment..." },
+            { id: 14, type: 'fill', q: "Complète : J'ai très ____, je veux boire de l'eau.", answer: "soif" },
+            { id: 15, type: 'fill', q: "Complète : Je n'aime pas le ____, je préfère le thé.", answer: "café" },
+            { id: 16, type: 'fill', q: "Complète : Pour le ____, je mange un sandwich.", hint: "midi / déjeuner" },
+            { id: 17, type: 'choice', q: "Où vas-tu pour manger avec tes amis ?", options: ["a. au cinéma", "b. au restaurant", "c. à la banque", "d. au garage"], correct: 1 },
+            { id: 18, type: 'choice', q: "Quel fruit est rouge ?", options: ["a. la banane", "b. l'orange", "c. la fraise", "d. le citron"], correct: 2 },
+            { id: 19, type: 'choice', q: "Qu'est-ce qu'on met dans un café ?", options: ["a. du sel", "b. du sucre", "c. de la viande", "d. des carottes"], correct: 1 },
+            { id: 20, type: 'choice', q: "Quel est un légume ?", options: ["a. la pomme", "b. le poulet", "c. le brocoli", "d. le yaourt"], correct: 2 },
+            { id: 21, type: 'open', q: "Qu'est-ce que tu manges au petit déjeuner ?" },
+            { id: 22, type: 'open', q: "Qu'est-ce que tu manges au déjeuner ?" },
+            { id: 23, type: 'open', q: "Qu'est-ce que tu manges au dîner ?" },
+            { id: 24, type: 'open', q: "Qu'est-ce que tu manges comme dessert ?" },
+            { id: 25, type: 'fill', q: "Conjugue 'boire' : Je ____ du lait.", answer: "bois" },
+            { id: 26, type: 'fill', q: "Conjugue 'boire' : Nous ____ du jus.", answer: "buvons" },
+            { id: 27, type: 'fill', q: "Conjugue 'boire' : Ils ____ de l'eau.", answer: "boivent" },
+            { id: 28, type: 'fill', q: "Conjugue 'boire' : Vous ____ du soda.", answer: "buvez" },
+            { id: 29, type: 'fill', q: "Conjugue 'aimer' au négatif : Je ____ pas les oignons.", answer: "n'aime" },
+            { id: 30, type: 'fill', q: "Conjugue 'détester' : Elle ____ les épinards.", answer: "déteste" },
+            { id: 31, type: 'open', q: "Écris une phrase avec le mot : POMME" },
+            { id: 32, type: 'open', q: "Écris une phrase avec le mot : DÎNER" },
+            { id: 33, type: 'fill', q: "Traduis : 'I don't eat meat.'", answer: "Je ne mange pas de viande" },
+            { id: 34, type: 'fill', q: "Traduis : 'We eat lunch at school.'", answer: "Nous déjeunons à l'école" },
+            { id: 35, type: 'fill', q: "Traduis : 'Do you (fam) like tomatoes?'", answer: "Est-ce que tu aimes les tomates ?" },
+            { id: 36, type: 'fill', q: "Traduis : 'They (m) don't like green beans.'", answer: "Ils n'aiment pas les haricots verts" },
+            { id: 37, type: 'fill', q: "Translate to English : 'Je prends du poulet et du riz.'", answer: "I'm having chicken and rice" },
+            { id: 38, type: 'fill', q: "Translate to English : 'Vous détestez les œufs.'", answer: "You hate eggs" },
+            { id: 39, type: 'fill', q: "Translate to English : 'Nous aimons le poulet mais nous préférons le poisson.'", answer: "We like chicken but we prefer fish" },
+            { id: 40, type: 'fill', q: "Translate to English : 'Nous ne mangeons pas de légumes.'", answer: "We don't eat vegetables" }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+        let answers = new Array(tasks.length).fill(null);
+
+        const cardDisplay = document.getElementById('card-display');
+        const questionText = document.getElementById('question-text');
+        const interactionArea = document.getElementById('interaction-area');
+        const cardIndexDisplay = document.getElementById('card-index-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const progressBar = document.getElementById('progress-bar');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+
+        function initCard() {
+            const task = tasks[currentIndex];
+            
+            // Update UI
+            cardIndexDisplay.innerText = `Question ${currentIndex + 1}/${tasks.length}`;
+            progressBar.style.width = `${((currentIndex + 1) / tasks.length) * 100}%`;
+            questionText.innerText = task.q;
+            
+            // Animation reset
+            cardDisplay.classList.remove('animate-scoot');
+            void cardDisplay.offsetWidth; // trigger reflow
+            cardDisplay.classList.add('animate-scoot');
+
+            // Clear area
+            interactionArea.innerHTML = '';
+
+            // Render Interaction
+            if (task.type === 'choice') {
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
+                task.options.forEach((opt, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = `p-4 text-left border-2 rounded-xl transition font-bold ${answers[currentIndex] === i ? 'bg-blue-500 text-white border-blue-600' : 'hover:bg-blue-50 border-gray-200'}`;
+                    btn.innerText = opt;
+                    btn.onclick = () => selectOption(i);
+                    grid.appendChild(btn);
+                });
+                interactionArea.appendChild(grid);
+            } else if (task.type === 'fill' || task.type === 'open') {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none text-xl text-center';
+                input.placeholder = task.hint || "Écris ta réponse ici...";
+                input.value = answers[currentIndex] || '';
+                input.oninput = (e) => answers[currentIndex] = e.target.value;
+                interactionArea.appendChild(input);
+                
+                if(task.type === 'fill') {
+                    const checkBtn = document.createElement('button');
+                    checkBtn.className = "mt-4 text-sm text-blue-500 font-bold uppercase tracking-wider underline";
+                    checkBtn.innerText = "Vérifier";
+                    checkBtn.onclick = () => {
+                        if(input.value.toLowerCase().trim() === task.answer.toLowerCase()) {
+                            input.classList.add('border-green-500', 'bg-green-50');
+                        } else {
+                            input.classList.add('border-red-500', 'bg-red-50');
+                        }
+                    };
+                    interactionArea.appendChild(checkBtn);
+                }
+            }
+
+            // Navigation visibility
+            prevBtn.classList.toggle('hidden', currentIndex === 0);
+            nextBtn.innerText = currentIndex === tasks.length - 1 ? 'Terminer !' : 'Suivant →';
+        }
+
+        function selectOption(index) {
+            answers[currentIndex] = index;
+            initCard();
+        }
+
+        nextBtn.onclick = () => {
+            if (currentIndex < tasks.length - 1) {
+                currentIndex++;
+                initCard();
+            } else {
+                showResults();
+            }
+        };
+
+        prevBtn.onclick = () => {
+            if (currentIndex > 0) {
+                currentIndex--;
+                initCard();
+            }
+        };
+
+        function calculateScore() {
+            let finalScore = 0;
+            tasks.forEach((t, i) => {
+                if(t.type === 'choice' && answers[i] === t.correct) finalScore++;
+                if(t.type === 'fill' && answers[i]?.toLowerCase().trim() === t.answer.toLowerCase()) finalScore++;
+                if(t.type === 'open' && answers[i]?.length > 2) finalScore++; // Simple check for open questions
+            });
+            return finalScore;
+        }
+
+        function showResults() {
+            const final = calculateScore();
+            document.getElementById('final-score').innerText = `${final}/${tasks.length}`;
+            document.getElementById('result-screen').classList.remove('hidden');
+        }
+
+        // Start
+        initCard();
+
+    </script>
+</body>
+</html>
